@@ -38,6 +38,10 @@ contract GALLToken is ERC1155 {
         owner = msg.sender;
     }
 
+    /// @notice Set extran information when maxCnt of NFT is sold out.
+    ///         Without setting extra information, users can't mint NFT anymore.
+    /// @dev Only owner can call this function.
+    /// @param _price New price for minting NFT.
     function setExtraInfo(uint256 _price) external onlyOwner {
         require(_price > 0, "invalid price");
         price = _price;
