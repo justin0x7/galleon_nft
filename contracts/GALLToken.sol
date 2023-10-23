@@ -22,6 +22,8 @@ contract GALLToken is ERC1155 {
 
     address public priceToken;
 
+    address public royaltyWallet;
+
     modifier onlyOwner() {
         require(msg.sender == owner, "Ownable: caller is not the owner");
         _;
@@ -30,14 +32,17 @@ contract GALLToken is ERC1155 {
     constructor(
         string memory uri_,
         address _priceToken,
+        address _royaltyWallet,
         uint256 _price
     ) ERC1155(uri_) {
         require(_priceToken != address(0), "invalid price token");
         require(_price > 0, "invalid price");
+        require(_royaltyWallet != address(0), "invalid wallet address");
         priceToken = _priceToken;
         price = _price;
         extraMintAllowed = false;
         owner = msg.sender;
+        royaltyWallet = _royaltyWallet;
     }
 
     /// @notice Set extran information when maxCnt of NFT is sold out.
@@ -70,7 +75,7 @@ contract GALLToken is ERC1155 {
         uint256 transferAmount = requirePrice - royaltyAmount;
 
         if (royaltyAmount > 0) {
-            IERC20(priceToken).safeTransferFrom(sender, owner, royaltyAmount);
+            IERC20(priceToken).safeTransferFrom(sender, royaltyWallet, royaltyAmount);
         }
         IERC20(priceToken).safeTransferFrom(
             sender,

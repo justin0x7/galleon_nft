@@ -6,7 +6,7 @@ const { deploy, bigNum, smallNum } = require("../scripts/utils");
 describe("GALLToken test", function () {
   let price = bigNum(15, 18);
   before(async function () {
-    [this.deployer, this.user_1] = await ethers.getSigners();
+    [this.deployer, this.user_1, this.royaltyWallet] = await ethers.getSigners();
 
     this.testToken = await deploy("TestERC20", "TestERC20", "test", "test");
     this.GALLToken = await deploy(
@@ -14,6 +14,7 @@ describe("GALLToken test", function () {
       "GALLToken",
       "testURI",
       this.testToken.address,
+      this.royaltyWallet.address,
       BigInt(price)
     );
   });
@@ -41,12 +42,23 @@ describe("GALLToken test", function () {
     ).to.be.revertedWith("cannot mint more");
   });
 
-  it("set extra option and mint more", async function () {
+  it("set extra option and mint more & check royalty", async function () {
     await this.GALLToken.setExtraInfo(bigNum(20, 18));
+    let requirePrice = BigInt(bigNum(20, 18)) * BigInt(150);
+    let royaltyAmount = BigInt(requirePrice) * BigInt(5) / BigInt(100); // 5% royalty
+    let beforeRoyaltyBal = await this.testToken.balanceOf(this.royaltyWallet.address);
+
+    expect (smallNum(royaltyAmount, 18)).to.be.greaterThan(0);
+
     await this.testToken
       .connect(this.user_1)
-      .approve(this.GALLToken.address, BigInt(bigNum(20, 18)) * BigInt(150));
+      .approve(this.GALLToken.address, requirePrice);
     await this.GALLToken.connect(this.user_1).mint(150);
+
+    let afterRoyaltyBal = await this.testToken.balanceOf(this.royaltyWallet.address);
+    expect (
+      smallNum(BigInt(afterRoyaltyBal) - BigInt(beforeRoyaltyBal), 18)
+    ).to.be.equal(smallNum(royaltyAmount, 18));
   });
 
   it("withdraw tokens", async function () {
