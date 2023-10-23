@@ -10,6 +10,8 @@ contract GALLToken is ERC1155 {
 
     uint8 public constant maxCnt = 200;
 
+    uint8 public constant royaltyRate = 5;
+
     bool public extraMintAllowed;
 
     uint256 public tokenId;
@@ -51,6 +53,7 @@ contract GALLToken is ERC1155 {
     function mint(uint8 _amount) external {
         address sender = msg.sender;
         uint256 requirePrice = price * _amount;
+        require (_amount > 0, "invalid mint amount");
         require(
             tokenId + _amount < maxCnt || extraMintAllowed,
             "cannot mint more"
@@ -62,10 +65,17 @@ contract GALLToken is ERC1155 {
         );
 
         tokenId += _amount;
+
+        uint256 royaltyAmount = requirePrice * uint256(royaltyRate) / 100;
+        uint256 transferAmount = requirePrice - royaltyAmount;
+
+        if (royaltyAmount > 0) {
+            IERC20(priceToken).safeTransferFrom(sender, owner, royaltyAmount);
+        }
         IERC20(priceToken).safeTransferFrom(
             sender,
             address(this),
-            requirePrice
+            transferAmount
         );
         _mint(sender, tokenId, _amount, "");
     }
