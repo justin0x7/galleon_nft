@@ -83,6 +83,7 @@ contract GALLToken is ERC1155 {
             transferAmount
         );
         _mint(sender, tokenId, _amount, "");
+
     }
 
     function withdraw() external onlyOwner {
